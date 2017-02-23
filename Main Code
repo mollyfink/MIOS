@@ -1,0 +1,35 @@
+#include "mbed.h"
+#include "PinDetect.h"
+
+DigitalOut PWM1(p20); //use digital IO to control input to motor driver
+DigitalOut PWM2(p19);
+DigitalOut myLED(LED1); //LED indicator when on
+PinDetect pb(p18); //pushbutton input
+
+int volatile count=0;
+
+void pb_hit_callback (void) { //interrupt for pushbutton
+    count++;
+}
+
+int main() {
+   double wtime = 0.5/7;
+   // use internal pullup for pushbutton
+    pb.mode(PullUp);
+    // delay for initial pullup to take effect
+    wait(.01);
+    // setup Interrupt callback function for a pb hit
+    pb.attach_deasserted(&pb_hit_callback);
+    // start sampling pb input using interrupts
+    pb.setSampleFrequency();
+    
+   while(1){
+       if (count & 0x01){ //only run if button has been pressed
+           PWM1 = 1; PWM2 = 0; myLED = 1;
+           wait(wtime);
+           PWM1 = 0; PWM2 = 1; myLED = 0;
+           wait(wtime);
+        }
+        else {PWM1 = 0; PWM2 = 0; myLED = 0;} //if in "off" mode, set both inputs low
+   }
+}
